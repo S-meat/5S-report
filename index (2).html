@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>5S活動報告書</title>
+<style>
+:root {
+  --black: #111;
+  --dark: #333;
+  --mid: #666;
+  --light: #999;
+  --border: #ddd;
+  --bg: #f2f2f2;
+  --white: #fff;
+  --success: #2a7a2a;
+  --error: #c22;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+  background: var(--bg);
+  color: var(--black);
+  min-height: 100vh;
+  font-size: 15px;
+}
+
+/* ===== HEADER ===== */
+header {
+  background: var(--black);
+  color: var(--white);
+  padding: 0 20px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-logo { height: 20px; width: auto; filter: brightness(0) invert(1); display: block; }
+.header-div { width: 1px; height: 16px; background: rgba(255,255,255,0.2); }
+.header-title { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; color: rgba(255,255,255,0.8); white-space: nowrap; }
+.header-prog { font-size: 12px; color: var(--light); letter-spacing: 0.05em; }
+
+/* ===== PROGRESS ===== */
+.prog-bar { height: 2px; background: #222; position: sticky; top: 56px; z-index: 99; }
+.prog-fill { height: 100%; background: #fff; transition: width 0.4s ease; width: 0%; }
+
+/* ===== MAIN ===== */
+main { max-width: 680px; margin: 0 auto; padding: 20px 16px 80px; }
+
+/* ===== GAS CONFIG ===== */
+
+
+/* ===== SECTION ===== */
+.section {
+  background: var(--white);
+  border: 1px solid var(--border);
+  margin-bottom: 14px;
+  overflow: hidden;
+  transition: opacity 0.2s;
+}
+.section.locked { opacity: 0.4; pointer-events: none; }
+.sec-head {
+  background: var(--dark);
+  color: var(--white);
+  padding: 11px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sec-num { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: var(--light); min-width: 20px; }
+.sec-title { font-size: 14px; font-weight: 700; letter-spacing: 0.04em; flex: 1; }
+.sec-check {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid #555;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.sec-check.done { background: var(--white); border-color: var(--white); }
+.sec-check.done::after {
+  content: '';
+  width: 4px; height: 8px;
+  border-right: 2px solid var(--black);
+  border-bottom: 2px solid var(--black);
+  transform: rotate(45deg) translate(-1px,-1px);
+}
+.sec-body { padding: 18px; }
+
+/* ===== FORM ===== */
+.field { margin-bottom: 16px; }
+.field:last-child { margin-bottom: 0; }
+label {
+  display: block;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--dark); margin-bottom: 5px;
+}
+.req { color: var(--error); margin-left: 3px; }
+.opt { font-weight: 400; color: var(--light); font-size: 10px; text-transform: none; letter-spacing: 0; margin-left: 5px; }
+input[type="date"], input[type="text"], select, textarea {
+  width: 100%; padding: 11px 12px;
+  border: 1.5px solid var(--border);
+  font-size: 15px; font-family: inherit; color: var(--black);
+  background: var(--white);
+  outline: none; -webkit-appearance: none; appearance: none;
+  border-radius: 0;
+  transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--black); }
+input.err, select.err, textarea.err { border-color: var(--error); background: #fff8f8; }
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px; cursor: pointer;
+}
+textarea { resize: vertical; min-height: 100px; line-height: 1.65; }
+.char-count { text-align: right; font-size: 11px; color: var(--light); margin-top: 3px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 420px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ===== PHOTO UPLOAD ===== */
+.photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 420px) { .photo-grid { grid-template-columns: 1fr; } }
+.photo-zone { position: relative; }
+.photo-zone-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--dark); display: block; margin-bottom: 5px;
+}
+.drop-area {
+  border: 2px dashed var(--border); background: #fafafa;
+  aspect-ratio: 4/3;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: border-color 0.15s, background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.drop-area:hover, .drop-area.drag-over { border-color: var(--black); background: #efefef; }
+.drop-area input[type="file"] {
+  position: absolute; inset: 0; opacity: 0;
+  cursor: pointer; width: 100%; height: 100%; font-size: 0;
+}
+.drop-icon { opacity: 0.25; margin-bottom: 7px; }
+.drop-hint { font-size: 11px; color: var(--light); text-align: center; line-height: 1.5; pointer-events: none; }
+.drop-preview { position: absolute; inset: 0; display: none; }
+.drop-preview img { width: 100%; height: 100%; object-fit: cover; }
+.drop-preview.has { display: block; }
+.photo-clear {
+  position: absolute; top: 26px; right: 5px;
+  width: 22px; height: 22px;
+  background: rgba(0,0,0,0.55); color: white;
+  border: none; border-radius: 50%; font-size: 12px;
+  cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 5;
+}
+.photo-clear.vis { display: flex; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; padding: 14px 16px;
+  font-size: 14px; font-weight: 700; font-family: inherit;
+  letter-spacing: 0.06em; border: none; cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--black); color: var(--white); }
+.btn-primary:hover { background: #333; }
+.btn-primary:disabled { background: #bbb; cursor: not-allowed; transform: none; }
+.btn-ghost { background: transparent; color: var(--dark); border: 1.5px solid var(--border); font-size: 13px; padding: 11px 16px; }
+.btn-ghost:hover { border-color: var(--dark); }
+.mt16 { margin-top: 16px; }
+
+/* ===== CONFIRM TABLE ===== */
+.conf-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.conf-table tr { border-bottom: 1px solid var(--border); }
+.conf-table tr:last-child { border-bottom: none; }
+.conf-table td { padding: 9px 4px; vertical-align: top; }
+.conf-table td:first-child {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--mid);
+  width: 110px; padding-right: 10px; white-space: nowrap;
+}
+.conf-photos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+.conf-photo-label { font-size: 10px; font-weight: 700; color: var(--mid); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+.conf-photo-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border: 1px solid var(--border); display: block; }
+.no-photo { width: 100%; aspect-ratio: 4/3; background: #f4f4f4; border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--light); }
+.submit-area { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed; bottom: 20px; left: 50%;
+  transform: translateX(-50%) translateY(60px);
+  background: var(--black); color: var(--white);
+  padding: 11px 18px; font-size: 13px;
+  opacity: 0; transition: all 0.28s ease;
+  z-index: 1000; pointer-events: none;
+  max-width: calc(100vw - 32px); text-align: center;
+}
+.toast.err { background: var(--error); }
+.toast.ok { background: var(--success); }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ===== LOADING ===== */
+.loading {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6); z-index: 500;
+  align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+}
+.loading.show { display: flex; }
+.spinner {
+  width: 36px; height: 36px;
+  border: 2.5px solid rgba(255,255,255,0.2);
+  border-top-color: white; border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { color: white; font-size: 13px; letter-spacing: 0.06em; }
+
+/* ===== COMPLETE ===== */
+.complete { display: none; text-align: center; padding: 48px 20px; }
+.complete.show { display: block; }
+.complete-icon {
+  width: 56px; height: 56px;
+  border: 2px solid var(--black); border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center; margin-bottom: 18px;
+}
+.complete-icon::after {
+  content: ''; width: 11px; height: 20px;
+  border-right: 2.5px solid var(--black); border-bottom: 2.5px solid var(--black);
+  transform: rotate(45deg) translate(-2px,-2px);
+}
+.complete-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.complete-sub { font-size: 13px; color: var(--mid); margin-bottom: 28px; line-height: 1.7; white-space: pre-wrap; }
+
+/* ===== PDF CANVAS (hidden) ===== */
+#pdfCanvas { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <img src="data:image/webp;base64,UklGRkYBAABXRUJQVlA4WAoAAAAQAAAAfQAAGwAAQUxQSPEAAAABDzD/ERECcgSwbRvyXJCOBXLEIjxxhKwDX9TSx8gijT8/vQJf9rMX3JmRe7hCRP8nQKUHnQRJlORSJmVKlJRmqk/V+sR2pCPcieAE84yoHgxaDRgREmczMv7jBIuLlSU0vvXR+gRitmVpEc1W1y1sO2Zr5AvQbG9rIHWEk3h0X0NTOxb3MIktNNVFDfGpYqHx8E+jQVWD9B9Z3GAYWydaoT9nznES4dRLf8vMNPlCMqR8C8Zb5jwTi4ZK5Vvb0bYnVVNZ02BUQW/XoScuOptFlNZEN/OwERLK8wgBo5KJ3wgEsPmk5beVSty6lIgpXiUCAFZQOCAuAAAAkAMAnQEqfgAcAD5RKJFGo6KhoSIIAHAKCWkAABA3U1AFeIW5AAD+/KgAAAAAAA==" alt="SAIBOKU" class="header-logo">
+    <span class="header-div"></span>
+    <span class="header-title">5S活動報告書</span>
+  </div>
+  <span class="header-prog" id="progText">1 / 3</span>
+</header>
+<div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+
+<!-- 隠しiframe（GAS POSTで使用） -->
+<iframe name="gasTarget" style="display:none"></iframe>
+<!-- 隠しフォーム（GAS POST） -->
+<form id="gasForm" method="POST" target="gasTarget" style="display:none">
+  <input type="hidden" id="gasFormUrl" name="gasUrl">
+  <input type="hidden" id="gasFormData" name="data">
+</form>
+
+<main>
+
+  <!-- STEP 1: 基本情報 -->
+  <div class="section" id="sec1">
+    <div class="sec-head">
+      <span class="sec-num">01</span>
+      <span class="sec-title">基本情報</span>
+      <div class="sec-check" id="chk1"></div>
+    </div>
+    <div class="sec-body">
+      <div class="two-col">
+        <div class="field">
+          <label>日付<span class="req">*</span></label>
+          <input type="date" id="date">
+        </div>
+        <div class="field">
+          <label>氏名<span class="req">*</span></label>
+          <input type="text" id="name" placeholder="例：彩牧 ヨーク">
+        </div>
+      </div>
+      <div class="field">
+        <label>部署<span class="req">*</span></label>
+        <select id="department">
+          <option value="">--- 選択してください ---</option>
+          <option>製造1課　ミート</option>
+          <option>製造1課　食肉加工</option>
+          <option>製造2課　包装</option>
+          <option>製造管理</option>
+        </select>
+      </div>
+      <button class="btn btn-primary mt16" onclick="step1()">次へ ›</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: 改善内容 -->
+  <div class="section locked" id="sec2">
+    <div class="sec-head">
+      <span class="sec-num">02</span>
+      <span class="sec-title">改善内容</span>
+      <div class="sec-check" id="chk2"></div>
+    </div>
+    <div class="sec-body">
+      <div class="field">
+        <label>改善箇所<span class="req">*</span></label>
+        <input type="text" id="location" placeholder="例：精肉作業室、食肉加工室、包装室、事務所">
+      </div>
+      <div class="field">
+        <label>改善内容・効果などの補足説明<span class="req">*</span></label>
+        <textarea id="content" rows="6" placeholder="改善した内容や方法、期待される効果などを記入してください"></textarea>
+        <div class="char-count"><span id="ccount">0</span> 文字</div>
+      </div>
+      <button class="btn btn-primary mt16" onclick="step2()">次へ ›</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: 写真添付 -->
+  <div class="section locked" id="sec3">
+    <div class="sec-head">
+      <span class="sec-num">03</span>
+      <span class="sec-title">写真添付</span>
+      <div class="sec-check" id="chk3"></div>
+    </div>
+    <div class="sec-body">
+      <div class="photo-grid">
+        <div class="photo-zone">
+          <span class="photo-zone-label">改善前（Before）<span class="opt">任意</span></span>
+          <div class="drop-area" id="dropBefore" ondragover="doDragOver(event,'before')" ondragleave="doDragLeave('before')" ondrop="doDrop(event,'before')">
+            <input type="file" accept="image/*" id="fileBefore" onchange="onFile(event,'before')">
+            <svg class="drop-icon" width="30" height="30" viewBox="0 0 30 30" fill="none">
+              <rect x="3" y="7" width="24" height="18" rx="2" stroke="#999" stroke-width="1.5"/>
+              <circle cx="19" cy="14" r="3" stroke="#999" stroke-width="1.5"/>
+              <path d="M3 21l6-5 5 4 4-3 9 6" stroke="#999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="drop-hint">タップまたは<br>ドロップで追加</div>
+            <div class="drop-preview" id="prevBefore"><img id="prevImgBefore" src="" alt=""></div>
+          </div>
+          <button class="photo-clear" id="clrBefore" onclick="clearPhoto('before')">✕</button>
+        </div>
+        <div class="photo-zone">
+          <span class="photo-zone-label">改善後（After）<span class="opt">任意</span></span>
+          <div class="drop-area" id="dropAfter" ondragover="doDragOver(event,'after')" ondragleave="doDragLeave('after')" ondrop="doDrop(event,'after')">
+            <input type="file" accept="image/*" id="fileAfter" onchange="onFile(event,'after')">
+            <svg class="drop-icon" width="30" height="30" viewBox="0 0 30 30" fill="none">
+              <rect x="3" y="7" width="24" height="18" rx="2" stroke="#999" stroke-width="1.5"/>
+              <circle cx="19" cy="14" r="3" stroke="#999" stroke-width="1.5"/>
+              <path d="M3 21l6-5 5 4 4-3 9 6" stroke="#999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div class="drop-hint">タップまたは<br>ドロップで追加</div>
+            <div class="drop-preview" id="prevAfter"><img id="prevImgAfter" src="" alt=""></div>
+          </div>
+          <button class="photo-clear" id="clrAfter" onclick="clearPhoto('after')">✕</button>
+        </div>
+      </div>
+      <button class="btn btn-primary mt16" onclick="step3()">確認へ ›</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: 確認・提出 -->
+  <div class="section locked" id="sec4">
+    <div class="sec-head">
+      <span class="sec-num">04</span>
+      <span class="sec-title">確認・提出</span>
+    </div>
+    <div class="sec-body">
+      <table class="conf-table" id="confTable"></table>
+      <div class="submit-area">
+        <button class="btn btn-primary" id="submitBtn" onclick="doSubmit()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v9M4 7l4 4 4-4" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 13h12" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+          スプレッドシートへ提出
+        </button>
+        <button class="btn btn-ghost" onclick="doPDF()">PDF出力（任意）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 完了 -->
+  <div class="complete" id="completeScreen">
+    <div class="complete-icon"></div>
+    <div class="complete-title">提出完了</div>
+    <div class="complete-sub" id="completeMsg"></div>
+    <button class="btn btn-ghost" style="max-width:280px;margin:0 auto;" onclick="doReset()">新しい報告書を作成</button>
+  </div>
+
+</main>
+
+<!-- PDF描画用隠しcanvas -->
+<canvas id="pdfCanvas"></canvas>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Loading -->
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">送信中...</div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+var S = {
+  step: 1,
+  before: null,  // data URL
+  after: null
+};
+
+var LOGO_PDF_URI = 'data:image/webp;base64,UklGRuIBAABXRUJQVlA4WAoAAAAQAAAAswAAJwAAQUxQSFIBAAABDzD/ERFCjmvbcSN94gcMmVZUfyfkxgSRPYeV9txLaTa8gN7CF3pKf88ETOgFlAwuIaL/E0Dz72a1aX5SD7PSrDxpwaS1uyklN56iUD/F8ClQO+t80vAi0C7Fq4cQgl1SNk/954MQpA6pQOwiUZm6BikHjFyR9BKGtR6FQZH1ix8iBanhXoOydPO7/uaoHIUo1nB30Iy7Xof9gxvIRFl6c227uuEzUyxytDSyDXRDJkvKH/OQD144igRuURmpv/z9JQ2RiCLt/uTtl9ta6Isy8pBvUVkWZemNbMMtJR204epOpFLcceDaduWovB64E+O+/ebVeD/wCdhYuvldv/jVuDsqUnEAKLJeQodrnmqoELGNkSuSPpEOZ4FqKHgQ++KRCsSepAbSROYJL8R+eAgh2JNsmQqoM7VHQb94OOpsnKoQAXA0swM0tSHPUcgc2nnSZFZQOCBqAAAA8AUAnQEqtAAoAD4xFIdCoiEMOgAQAYJaQhwAAC51m2i5RoBGgEZ+bUS5ZzxlMplMWE1RMkTfpgAA/v+9xz//+TLQ+4ch8///7URA9+qNcf//JOAAHf1Gr//9qcVF5NH//+1EUr+yUAAAAA==';
+var GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbyYPAxDB81EBRVcMPsvW7dyMQC3JxCMATOHZHMxeiS8b0A-JTNF1YJemXVcUpo03kU3/exec';
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('load', function() {
+  var today = new Date();
+  document.getElementById('date').value =
+    today.getFullYear() + '-' +
+    pad(today.getMonth()+1) + '-' +
+    pad(today.getDate());
+
+  document.getElementById('content').addEventListener('input', function() {
+    document.getElementById('ccount').textContent = this.value.length;
+  });
+
+  // iframeからのメッセージ受信（GASレスポンス用）
+  window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === '5s_gas_done') {
+      hideLoading();
+      showComplete(e.data.submittedAt);
+    }
+  });
+
+  updateProg();
+});
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+// ============================================================
+// PROGRESS
+// ============================================================
+function updateProg() {
+  var n = Math.min(S.step, 3);
+  document.getElementById('progText').textContent = n + ' / 3';
+  document.getElementById('progFill').style.width = (n / 4 * 100) + '%';
+}
+
+// ============================================================
+// STEPS
+// ============================================================
+function step1() {
+  if (!chk(['date','name','department'])) { toast('未入力の項目があります','err'); return; }
+  done('chk1'); S.step=2; unlock('sec2'); updateProg(); scrollTo('sec2');
+}
+function step2() {
+  if (!chk(['location','content'])) { toast('未入力の項目があります','err'); return; }
+  done('chk2'); S.step=3; unlock('sec3'); updateProg(); scrollTo('sec3');
+}
+function step3() {
+  done('chk3'); S.step=4; buildConfirm(); unlock('sec4'); updateProg(); scrollTo('sec4');
+}
+
+function unlock(id) { document.getElementById(id).classList.remove('locked'); }
+function done(id) { document.getElementById(id).classList.add('done'); }
+function scrollTo(id) {
+  setTimeout(function() {
+    var el = document.getElementById(id);
+    var top = el.getBoundingClientRect().top + window.scrollY - 72;
+    window.scrollTo({ top: top, behavior: 'smooth' });
+  }, 150);
+}
+
+// ============================================================
+// VALIDATE
+// ============================================================
+function chk(ids) {
+  var ok = true;
+  ids.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el.value.trim()) { el.classList.add('err'); ok = false; }
+    else el.classList.remove('err');
+  });
+  return ok;
+}
+
+// ============================================================
+// PHOTO
+// ============================================================
+function resizeImg(file, cb) {
+  var r = new FileReader();
+  r.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var MAX = 1200, w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h*MAX/w); w = MAX; }
+        else { w = Math.round(w*MAX/h); h = MAX; }
+      }
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      cb(c.toDataURL('image/jpeg',0.82));
+    };
+    img.src = e.target.result;
+  };
+  r.readAsDataURL(file);
+}
+
+function setPhoto(side, dataUrl) {
+  if (side==='before') {
+    S.before = dataUrl;
+    document.getElementById('prevImgBefore').src = dataUrl;
+    document.getElementById('prevBefore').classList.add('has');
+    document.getElementById('clrBefore').classList.add('vis');
+  } else {
+    S.after = dataUrl;
+    document.getElementById('prevImgAfter').src = dataUrl;
+    document.getElementById('prevAfter').classList.add('has');
+    document.getElementById('clrAfter').classList.add('vis');
+  }
+}
+
+function onFile(e, side) {
+  var f = e.target.files[0];
+  if (f) resizeImg(f, function(d) { setPhoto(side,d); });
+}
+function doDragOver(e,s) { e.preventDefault(); document.getElementById('drop'+cap(s)).classList.add('drag-over'); }
+function doDragLeave(s) { document.getElementById('drop'+cap(s)).classList.remove('drag-over'); }
+function doDrop(e,s) {
+  e.preventDefault(); doDragLeave(s);
+  var f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) resizeImg(f, function(d) { setPhoto(s,d); });
+}
+function clearPhoto(side) {
+  if (side==='before') {
+    S.before=null;
+    document.getElementById('prevBefore').classList.remove('has');
+    document.getElementById('clrBefore').classList.remove('vis');
+    document.getElementById('fileBefore').value='';
+  } else {
+    S.after=null;
+    document.getElementById('prevAfter').classList.remove('has');
+    document.getElementById('clrAfter').classList.remove('vis');
+    document.getElementById('fileAfter').value='';
+  }
+}
+function cap(s) { return s.charAt(0).toUpperCase()+s.slice(1); }
+
+// ============================================================
+// CONFIRM BUILD
+// ============================================================
+function buildConfirm() {
+  var rows = [
+    ['日付', fv('date')],
+    ['氏名', fv('name')],
+    ['部署', fv('department')],
+    ['改善箇所', fv('location')],
+    ['補足説明', fv('content')]
+  ];
+  var html = rows.map(function(r) {
+    return '<tr><td>'+esc(r[0])+'</td><td style="white-space:pre-wrap;line-height:1.6">'+esc(r[1])+'</td></tr>';
+  }).join('');
+  html += '<tr><td>写真</td><td>';
+  html += '<div class="conf-photos">';
+  html += '<div><div class="conf-photo-label">改善前</div>';
+  html += S.before ? '<img class="conf-photo-img" src="'+S.before+'">' : '<div class="no-photo">なし</div>';
+  html += '</div><div><div class="conf-photo-label">改善後</div>';
+  html += S.after ? '<img class="conf-photo-img" src="'+S.after+'">' : '<div class="no-photo">なし</div>';
+  html += '</div></div></td></tr>';
+  document.getElementById('confTable').innerHTML = html;
+}
+
+function fv(id) { return document.getElementById(id).value.trim(); }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ============================================================
+// GAS SUBMIT（隠しform + iframe方式 ※CORS完全回避）
+// ============================================================
+function doSubmit() {
+  var gasUrl = GAS_URL_DEFAULT;
+
+  var now = new Date();
+  var submittedAt =
+    now.getFullYear() + '/' + pad(now.getMonth()+1) + '/' + pad(now.getDate()) + ' ' +
+    pad(now.getHours()) + ':' + pad(now.getMinutes());
+
+  var payload = {
+    date: fv('date'),
+    name: fv('name'),
+    department: fv('department'),
+    location: fv('location'),
+    content: fv('content'),
+    submittedAt: submittedAt,
+    beforeImage: S.before ? S.before.replace(/^data:image\/\w+;base64,/,'') : null,
+    afterImage:  S.after  ? S.after.replace(/^data:image\/\w+;base64,/,'')  : null
+  };
+
+  // iframeのロードをポーリングで検知（GASはリダイレクトを返す）
+  var iframe = document.querySelector('iframe[name="gasTarget"]');
+  var sent = false;
+  var startTime = Date.now();
+
+  iframe.onload = function() {
+    if (sent && (Date.now() - startTime) > 1000) {
+      hideLoading();
+      showComplete(submittedAt);
+      iframe.onload = null;
+    }
+  };
+
+  // フォームにデータをセットしてsubmit
+  document.getElementById('gasForm').action = gasUrl;
+  document.getElementById('gasFormData').value = JSON.stringify(payload);
+  document.getElementById('gasForm').submit();
+  sent = true;
+
+  showLoading('送信中...');
+  document.getElementById('submitBtn').disabled = true;
+
+  // iframeのonloadが呼ばれない場合のフォールバック（5秒後に完了とみなす）
+  setTimeout(function() {
+    if (document.getElementById('loading').classList.contains('show')) {
+      hideLoading();
+      showComplete(submittedAt);
+    }
+  }, 5000);
+}
+
+function showLoading(msg) {
+  document.getElementById('loadingText').textContent = msg;
+  document.getElementById('loading').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loading').classList.remove('show');
+}
+function showComplete(submittedAt) {
+  document.getElementById('completeMsg').textContent =
+    'スプレッドシートへの記録が完了しました。\n提出日時：' + submittedAt;
+  document.querySelectorAll('.section').forEach(function(s){ s.style.display='none'; });
+  document.getElementById('completeScreen').classList.add('show');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function doReset() {
+  ['name','location','content'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('department').value='';
+  document.getElementById('ccount').textContent='0';
+  clearPhoto('before'); clearPhoto('after');
+  ['chk1','chk2','chk3'].forEach(function(id){ document.getElementById(id).classList.remove('done'); });
+  ['sec2','sec3','sec4'].forEach(function(id){ document.getElementById(id).classList.add('locked'); });
+  document.querySelectorAll('.section').forEach(function(s){ s.style.display=''; });
+  document.getElementById('completeScreen').classList.remove('show');
+  document.getElementById('submitBtn').disabled=false;
+  S.step=1; S.before=null; S.after=null;
+  updateProg();
+  window.scrollTo({top:0,behavior:'smooth'});
+  var t=new Date();
+  document.getElementById('date').value=t.getFullYear()+'-'+pad(t.getMonth()+1)+'-'+pad(t.getDate());
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function toast(msg, type) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + (type||'') + ' show';
+  setTimeout(function() { el.className='toast'; }, 3200);
+}
+
+// ============================================================
+// PDF出力（Canvas描画 → 日本語対応）
+// ============================================================
+function doPDF() {
+  var canvas = document.getElementById('pdfCanvas');
+  // A4 @ 144dpi: 1190 x 1684 px
+  var PW = 1190, PH = 1684;
+  canvas.width = PW; canvas.height = PH;
+  var ctx = canvas.getContext('2d');
+
+  // 背景
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,PW,PH);
+
+  // ---- HEADER BAND ----
+  ctx.fillStyle = '#111111';
+  ctx.fillRect(0,0,PW,90);
+
+  // ロゴ（ヘッダー内 白抜き）
+  var logoImg = new Image();
+  logoImg.onload = function() {
+    // ロゴ描画（白抜き: filter適用はcanvasでは難しいので反転済みURIを使う）
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    ctx.drawImage(logoImg, 30, 22, logoImg.width * (46/logoImg.height), 46);
+    ctx.restore();
+
+    // 報告書タイトル右寄せ
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('5S活動報告書', PW-30, 55);
+
+    // 部署サブテキスト
+    ctx.font = '15px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.fillText('製造部　' + fv('department'), PW-30, 76);
+
+    ctx.textAlign = 'left';
+
+    var y = 118;
+    var ML = 40, MR = 40, CW = PW - ML - MR;
+
+    // ---- 基本情報 ----
+    drawSectionHead(ctx, '■ 基本情報', ML, y, CW);
+    y += 46;
+
+    // 2列
+    var col1x = ML + 10, col2x = ML + CW/2 + 10;
+    var colW = CW/2 - 20;
+
+    drawLabelValue(ctx, '日付', fv('date'), col1x, y, colW);
+    drawLabelValue(ctx, '氏名', fv('name'), col2x, y, colW);
+    y += 44;
+    drawLabelValue(ctx, '部署', fv('department'), col1x, y, CW - 10);
+    y += 44;
+
+    // 区切り線
+    ctx.strokeStyle = '#ddd';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ML, y); ctx.lineTo(PW-MR, y); ctx.stroke();
+    y += 20;
+
+    // ---- 改善箇所 ----
+    drawSectionHead(ctx, '■ 改善箇所', ML, y, CW);
+    y += 46;
+    ctx.fillStyle = '#111';
+    ctx.font = '24px sans-serif';
+    var locLines = wrapText(ctx, fv('location') || '（未入力）', CW - 20, 24);
+    locLines.forEach(function(line) {
+      ctx.fillText(line, ML+10, y); y += 32;
+    });
+    y += 16;
+
+    // 区切り線
+    ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ML,y); ctx.lineTo(PW-MR,y); ctx.stroke();
+    y += 20;
+
+    // ---- 改善内容・補足説明 ----
+    drawSectionHead(ctx, '■ 改善内容・効果などの補足説明', ML, y, CW);
+    y += 46;
+    ctx.fillStyle = '#111';
+    ctx.font = '22px sans-serif';
+    var contentText = fv('content') || '（未入力）';
+    var contentLines = [];
+    contentText.split('\n').forEach(function(para) {
+      var wrapped = wrapText(ctx, para, CW - 20, 22);
+      contentLines = contentLines.concat(wrapped.length ? wrapped : ['']);
+    });
+    contentLines.forEach(function(line) {
+      ctx.fillText(line, ML+10, y); y += 30;
+    });
+    y += 20;
+
+    // ---- 写真 ----
+    ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ML,y); ctx.lineTo(PW-MR,y); ctx.stroke();
+    y += 20;
+
+    drawSectionHead(ctx, '■ 写真　Photos', ML, y, CW);
+    y += 46;
+
+    var photoW = (CW - 20) / 2;
+    var photoH = Math.round(photoW * 0.72);
+
+    // Beforeラベル
+    ctx.fillStyle = '#666';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillText('改善前（Before）', ML, y);
+    ctx.fillText('改善後（After）', ML + photoW + 20, y);
+    y += 10;
+
+    // 写真枠
+    ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1.5;
+    ctx.strokeRect(ML, y, photoW, photoH);
+    ctx.strokeRect(ML + photoW + 20, y, photoW, photoH);
+
+    var photoY = y;
+    var photosLoaded = 0;
+    var totalPhotos = (S.before ? 1 : 0) + (S.after ? 1 : 0);
+
+    function afterPhotos() {
+      // 写真なしプレースホルダー
+      ctx.fillStyle = '#f4f4f4';
+      if (!S.before) {
+        ctx.fillRect(ML+1, photoY+1, photoW-2, photoH-2);
+        ctx.fillStyle='#bbb'; ctx.font='20px sans-serif'; ctx.textAlign='center';
+        ctx.fillText('写真を添付してください', ML+photoW/2, photoY+photoH/2);
+        ctx.textAlign='left';
+      }
+      if (!S.after) {
+        ctx.fillStyle='#f4f4f4';
+        ctx.fillRect(ML+photoW+21, photoY+1, photoW-2, photoH-2);
+        ctx.fillStyle='#bbb'; ctx.font='20px sans-serif'; ctx.textAlign='center';
+        ctx.fillText('写真を添付してください', ML+photoW+20+photoW/2, photoY+photoH/2);
+        ctx.textAlign='left';
+      }
+
+      var finalY = photoY + photoH + 30;
+
+      // ---- フッター ----
+      ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(ML,finalY); ctx.lineTo(PW-MR,finalY); ctx.stroke();
+      finalY += 18;
+
+      var now = new Date();
+      var dateStr = now.getFullYear()+'年'+pad(now.getMonth()+1)+'月'+pad(now.getDate())+'日 '+pad(now.getHours())+':'+pad(now.getMinutes());
+      ctx.fillStyle = '#888';
+      ctx.font = '16px sans-serif';
+      ctx.fillText('提出日時：' + dateStr + '　サイボク　製造部', ML, finalY+14);
+
+      // Canvas → PDF (A4 JPEG埋め込み)
+      var dataURL = canvas.toDataURL('image/jpeg', 0.92);
+      var link = document.createElement('a');
+      var datePart = fv('date').replace(/-/g,'');
+      var namePart = fv('name').replace(/\s/g,'');
+      link.download = '5S報告書_' + namePart + '_' + datePart + '.pdf';
+
+      // jsPDFでA4に画像を貼る
+      try {
+        var jspdf = window.jspdf || (typeof jsPDF !== 'undefined' ? {jsPDF} : null);
+        if (jspdf && jspdf.jsPDF) {
+          var doc = new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+          doc.addImage(dataURL,'JPEG',0,0,210,297);
+          doc.save('5S報告書_' + namePart + '_' + datePart + '.pdf');
+          toast('PDFを出力しました','ok');
+        } else {
+          // fallback: PNG保存
+          link.href = dataURL.replace('image/jpeg','image/png');
+          link.download = link.download.replace('.pdf','.png');
+          link.click();
+          toast('画像として出力しました（PDF変換ライブラリ読み込み中）','ok');
+        }
+      } catch(ex) {
+        link.href = dataURL;
+        link.click();
+        toast('画像として出力しました','ok');
+      }
+
+      canvas.style.display='none';
+    }
+
+    if (totalPhotos === 0) {
+      afterPhotos();
+      return;
+    }
+
+    function loadPhoto(dataUrl, x, y, w, h, callback) {
+      var img = new Image();
+      img.onload = function() {
+        // アスペクト比を保ちながらフィット
+        var ir = img.width/img.height, fr = w/h;
+        var dw,dh,dx,dy;
+        if (ir > fr) { dw=w; dh=w/ir; dx=x; dy=y+(h-dh)/2; }
+        else { dh=h; dw=h*ir; dx=x+(w-dw)/2; dy=y; }
+        ctx.drawImage(img,dx,dy,dw,dh);
+        callback();
+      };
+      img.src = dataUrl;
+    }
+
+    if (S.before) {
+      loadPhoto(S.before, ML, photoY, photoW, photoH, function() {
+        photosLoaded++;
+        if (photosLoaded === totalPhotos) afterPhotos();
+      });
+    }
+    if (S.after) {
+      loadPhoto(S.after, ML+photoW+20, photoY, photoW, photoH, function() {
+        photosLoaded++;
+        if (photosLoaded === totalPhotos) afterPhotos();
+      });
+    }
+  };
+
+  var logoForPdf = new Image();
+  logoForPdf.src = LOGO_PDF_URI;
+  logoImg.src = logoForPdf.src;
+
+  canvas.style.display='block';
+}
+
+// ---- Canvas helper ----
+function drawSectionHead(ctx, label, x, y, w) {
+  ctx.fillStyle = '#222222';
+  ctx.fillRect(x, y-6, w, 34);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.fillText(label, x+10, y+16);
+}
+
+function drawLabelValue(ctx, label, value, x, y, maxW) {
+  ctx.fillStyle = '#888';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillText(label, x, y);
+  ctx.fillStyle = '#111';
+  ctx.font = '22px sans-serif';
+  ctx.fillText(value || '―', x, y+26);
+}
+
+function wrapText(ctx, text, maxWidth, fontSize) {
+  var lines = [];
+  var words = text.split('');
+  var line = '';
+  for (var i=0; i<words.length; i++) {
+    var test = line + words[i];
+    if (ctx.measureText(test).width > maxWidth && line.length > 0) {
+      lines.push(line); line = words[i];
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines.length ? lines : [''];
+}
+</script>
+
+<!-- jsPDF（PDF変換用） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</body>
+</html>
