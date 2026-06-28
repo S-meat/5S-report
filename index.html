@@ -124,6 +124,24 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.65; }
 .char-count { text-align: right; font-size: 11px; color: var(--light); margin-top: 3px; }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .two-col-bottom { align-items: end; }
+/* コスト2項目：ラベル行・入力欄行を独立した4セルgridで完全に揃える */
+.cost-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 5px 14px;
+  margin-bottom: 16px;
+}
+.cost-label {
+  display: block;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--dark);
+  align-self: end;
+}
+.cost-grid input {
+  grid-row: 2;
+}
 @media (max-width: 420px) { .two-col { grid-template-columns: 1fr; } }
 
 /* ===== PHOTO UPLOAD ===== */
@@ -323,15 +341,11 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.65; }
         <textarea id="content" rows="6" placeholder="改善した内容や方法、期待される効果などを記入してください"></textarea>
         <div class="char-count"><span id="ccount">0</span> 文字</div>
       </div>
-      <div class="two-col two-col-bottom">
-        <div class="field">
-          <label>改善コスト<span class="opt">任意・円</span></label>
-          <input type="number" id="costIn" placeholder="0" min="0" step="1">
-        </div>
-        <div class="field">
-          <label>コスト削減<span class="opt">任意・円/月</span></label>
-          <input type="number" id="costOut" placeholder="0" min="0" step="1">
-        </div>
+      <div class="cost-grid">
+        <label class="cost-label">改善コスト<span class="opt">任意・円</span></label>
+        <label class="cost-label">コスト削減<span class="opt">任意・円/月</span></label>
+        <input type="number" id="costIn" placeholder="0" min="0" step="1">
+        <input type="number" id="costOut" placeholder="0" min="0" step="1">
       </div>
       <button class="btn btn-primary mt16" onclick="step2()">次へ ›</button>
     </div>
