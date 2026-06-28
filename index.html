@@ -103,7 +103,7 @@ label {
 }
 .req { color: var(--error); margin-left: 3px; }
 .opt { font-weight: 400; color: var(--light); font-size: 10px; text-transform: none; letter-spacing: 0; margin-left: 5px; }
-input[type="date"], input[type="text"], select, textarea {
+input[type="date"], input[type="time"], input[type="number"], input[type="text"], select, textarea {
   width: 100%; padding: 11px 12px;
   border: 1.5px solid var(--border);
   font-size: 15px; font-family: inherit; color: var(--black);
@@ -273,16 +273,6 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.65; }
       <div class="sec-check" id="chk1"></div>
     </div>
     <div class="sec-body">
-      <div class="two-col">
-        <div class="field">
-          <label>日付<span class="req">*</span></label>
-          <input type="date" id="date">
-        </div>
-        <div class="field">
-          <label>氏名<span class="req">*</span></label>
-          <input type="text" id="name" placeholder="例：彩牧 ヨーク">
-        </div>
-      </div>
       <div class="field">
         <label>部署<span class="req">*</span></label>
         <select id="department">
@@ -292,6 +282,10 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.65; }
           <option>製造2課　包装</option>
           <option>製造管理</option>
         </select>
+      </div>
+      <div class="field">
+        <label>氏名<span class="req">*</span></label>
+        <input type="text" id="name" placeholder="例：彩牧 ヨーク">
       </div>
       <button class="btn btn-primary mt16" onclick="step1()">次へ ›</button>
     </div>
@@ -306,6 +300,20 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.65; }
     </div>
     <div class="sec-body">
       <div class="field">
+        <label>実施日<span class="req">*</span></label>
+        <input type="date" id="date">
+      </div>
+      <div class="two-col">
+        <div class="field">
+          <label>開始時間<span class="req">*</span></label>
+          <input type="time" id="timeStart">
+        </div>
+        <div class="field">
+          <label>終了時間<span class="req">*</span></label>
+          <input type="time" id="timeEnd">
+        </div>
+      </div>
+      <div class="field">
         <label>改善箇所<span class="req">*</span></label>
         <input type="text" id="location" placeholder="例：精肉作業室、食肉加工室、包装室、事務所">
       </div>
@@ -313,6 +321,16 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.65; }
         <label>改善内容・効果などの補足説明<span class="req">*</span></label>
         <textarea id="content" rows="6" placeholder="改善した内容や方法、期待される効果などを記入してください"></textarea>
         <div class="char-count"><span id="ccount">0</span> 文字</div>
+      </div>
+      <div class="two-col">
+        <div class="field">
+          <label>改善にかかったコスト<span class="opt">任意・円</span></label>
+          <input type="number" id="costIn" placeholder="0" min="0" step="1">
+        </div>
+        <div class="field">
+          <label>改善によるコスト削減<span class="opt">任意・円/月</span></label>
+          <input type="number" id="costOut" placeholder="0" min="0" step="1">
+        </div>
       </div>
       <button class="btn btn-primary mt16" onclick="step2()">次へ ›</button>
     </div>
@@ -454,11 +472,11 @@ function updateProg() {
 // STEPS
 // ============================================================
 function step1() {
-  if (!chk(['date','name','department'])) { toast('未入力の項目があります','err'); return; }
+  if (!chk(['department','name'])) { toast('未入力の項目があります','err'); return; }
   done('chk1'); S.step=2; unlock('sec2'); updateProg(); scrollTo('sec2');
 }
 function step2() {
-  if (!chk(['location','content'])) { toast('未入力の項目があります','err'); return; }
+  if (!chk(['date','timeStart','timeEnd','location','content'])) { toast('未入力の項目があります','err'); return; }
   done('chk2'); S.step=3; unlock('sec3'); updateProg(); scrollTo('sec3');
 }
 function step3() {
@@ -556,11 +574,14 @@ function cap(s) { return s.charAt(0).toUpperCase()+s.slice(1); }
 // ============================================================
 function buildConfirm() {
   var rows = [
-    ['日付', fv('date')],
-    ['氏名', fv('name')],
     ['部署', fv('department')],
+    ['氏名', fv('name')],
+    ['実施日', fv('date')],
+    ['時間', fv('timeStart') + ' ― ' + fv('timeEnd')],
     ['改善箇所', fv('location')],
-    ['補足説明', fv('content')]
+    ['補足説明', fv('content')],
+    ['改善コスト', fv('costIn') ? fv('costIn') + ' 円' : '―'],
+    ['コスト削減', fv('costOut') ? fv('costOut') + ' 円/月' : '―'],
   ];
   var html = rows.map(function(r) {
     return '<tr><td>'+esc(r[0])+'</td><td style="white-space:pre-wrap;line-height:1.6">'+esc(r[1])+'</td></tr>';
@@ -593,8 +614,12 @@ function doSubmit() {
     date: fv('date'),
     name: fv('name'),
     department: fv('department'),
+    timeStart: fv('timeStart'),
+    timeEnd: fv('timeEnd'),
     location: fv('location'),
     content: fv('content'),
+    costIn: fv('costIn'),
+    costOut: fv('costOut'),
     submittedAt: submittedAt,
     beforeImage: S.before ? S.before.replace(/^data:image\/\w+;base64,/,'') : null,
     afterImage:  S.after  ? S.after.replace(/^data:image\/\w+;base64,/,'')  : null
@@ -647,7 +672,7 @@ function showComplete(submittedAt) {
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function doReset() {
-  ['name','location','content'].forEach(function(id){ document.getElementById(id).value=''; });
+  ['name','location','content','costIn','costOut'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('department').value='';
   document.getElementById('ccount').textContent='0';
   clearPhoto('before'); clearPhoto('after');
@@ -661,6 +686,10 @@ function doReset() {
   window.scrollTo({top:0,behavior:'smooth'});
   var t=new Date();
   document.getElementById('date').value=t.getFullYear()+'-'+pad(t.getMonth()+1)+'-'+pad(t.getDate());
+  document.getElementById('timeStart').value='';
+  document.getElementById('timeEnd').value='';
+  document.getElementById('costIn').value='';
+  document.getElementById('costOut').value='';
 }
 
 // ============================================================
@@ -762,16 +791,18 @@ function _drawPDF(ctx, canvas, logoImg, PW, PH, ML, MR, MT, CW) {
   ctx.beginPath(); ctx.moveTo(ML+half, divY1); ctx.lineTo(ML+half, divY2); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(ML+half, divY3); ctx.lineTo(ML+half, divY3+rh4); ctx.stroke();
 
-  // 行1: 会社（部署を会社名代わりに）
-  _infoCell(ctx, '会社', fv('department') || '―', ML+16, boxY+10, CW-32);
-  // 行2: 部署 | 場所
-  _infoCell(ctx, '部署', '製造部', ML+16, divY1+8, half-24);
-  _infoCell(ctx, '場所', fv('location') || '―', ML+half+12, divY1+8, half-24);
-  // 行3: 担当者
-  _infoCell(ctx, '担当者', fv('name') || '―', ML+16, divY2+8, CW-32);
-  // 行4: 実施日 | 時間（日付と改善箇所）
-  _infoCell(ctx, '実施日', fv('date') || '―', ML+16, divY3+8, half-24);
-  _infoCell(ctx, '提出日時', S.submittedAt || '', ML+half+12, divY3+8, half-24);
+  // 行1: 部署
+  _infoCell(ctx, '部署', fv('department') || '―', ML+16, boxY+10, CW-32);
+  // 行2: 場所 | 担当者
+  _infoCell(ctx, '場所', fv('location') || '―', ML+16, divY1+8, half-24);
+  _infoCell(ctx, '担当者', fv('name') || '―', ML+half+12, divY1+8, half-24);
+  // 行3: 実施日
+  _infoCell(ctx, '実施日', fv('date') || '―', ML+16, divY2+8, CW-32);
+  // 行4: 時間
+  var timeStr = (fv('timeStart') && fv('timeEnd')) ? fv('timeStart') + ' ― ' + fv('timeEnd') : '―';
+  _infoCell(ctx, '時間', timeStr, ML+16, divY3+8, half-24);
+  var costStr = (fv('costIn') ? fv('costIn')+'円' : '―') + ' / 削減 ' + (fv('costOut') ? fv('costOut')+'円/月' : '―');
+  _infoCell(ctx, 'コスト', costStr, ML+half+12, divY3+8, half-24);
 
   y = boxY + boxH + 30;
 
@@ -812,6 +843,17 @@ function _drawPDF(ctx, canvas, logoImg, PW, PH, ML, MR, MT, CW) {
     // ── 補足説明セクション ───────────────────────
     _secLabel(ctx, '補足説明', ML, y, CW);
     y += 26;
+
+    // コスト情報（任意）
+    if (fv('costIn') || fv('costOut')) {
+      ctx.fillStyle = '#888888';
+      ctx.font = '17px sans-serif';
+      var costLine = '';
+      if (fv('costIn'))  costLine += '改善コスト：' + parseInt(fv('costIn')).toLocaleString() + ' 円　';
+      if (fv('costOut')) costLine += 'コスト削減：' + parseInt(fv('costOut')).toLocaleString() + ' 円/月';
+      ctx.fillText(costLine, ML, y + 14);
+      y += 30;
+    }
 
     var contentText = fv('content') || '';
     ctx.font = '24px sans-serif';
