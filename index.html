@@ -407,7 +407,8 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.65; }
 var S = {
   step: 1,
   before: null,  // data URL
-  after: null
+  after: null,
+  submittedAt: ''
 };
 
 var LOGO_PDF_URI = 'data:image/webp;base64,UklGRuIBAABXRUJQVlA4WAoAAAAQAAAAswAAJwAAQUxQSFIBAAABDzD/ERFCjmvbcSN94gcMmVZUfyfkxgSRPYeV9txLaTa8gN7CF3pKf88ETOgFlAwuIaL/E0Dz72a1aX5SD7PSrDxpwaS1uyklN56iUD/F8ClQO+t80vAi0C7Fq4cQgl1SNk/954MQpA6pQOwiUZm6BikHjFyR9BKGtR6FQZH1ix8iBanhXoOydPO7/uaoHIUo1nB30Iy7Xof9gxvIRFl6c227uuEzUyxytDSyDXRDJkvKH/OQD144igRuURmpv/z9JQ2RiCLt/uTtl9ta6Isy8pBvUVkWZemNbMMtJR204epOpFLcceDaduWovB64E+O+/ebVeD/wCdhYuvldv/jVuDsqUnEAKLJeQodrnmqoELGNkSuSPpEOZ4FqKHgQ++KRCsSepAbSROYJL8R+eAgh2JNsmQqoM7VHQb94OOpsnKoQAXA0swM0tSHPUcgc2nnSZFZQOCBqAAAA8AUAnQEqtAAoAD4xFIdCoiEMOgAQAYJaQhwAAC51m2i5RoBGgEZ+bUS5ZzxlMplMWE1RMkTfpgAA/v+9xz//+TLQ+4ch8///7URA9+qNcf//JOAAHf1Gr//9qcVF5NH//+1EUr+yUAAAAA==';
@@ -620,6 +621,7 @@ function doSubmit() {
 
   showLoading('送信中...');
   document.getElementById('submitBtn').disabled = true;
+  S.submittedAt = submittedAt;
 
   // iframeのonloadが呼ばれない場合のフォールバック（5秒後に完了とみなす）
   setTimeout(function() {
@@ -674,255 +676,282 @@ function toast(msg, type) {
 // ============================================================
 // PDF出力（Canvas描画 → 日本語対応）
 // ============================================================
+// ============================================================
+// PDF出力（サンプルPDFフォーマット準拠）
+// Canvas描画 → jsPDF埋め込み
+// ============================================================
 function doPDF() {
+  // A4 @150dpi: 1240 x 1754 px
+  var PW = 1240, PH = 1754;
+  var ML = 55, MR = 55, MT = 55;
+  var CW = PW - ML - MR;
+
   var canvas = document.getElementById('pdfCanvas');
-  // A4 @ 144dpi: 1190 x 1684 px
-  var PW = 1190, PH = 1684;
   canvas.width = PW; canvas.height = PH;
+  canvas.style.display = 'block';
   var ctx = canvas.getContext('2d');
 
   // 背景
   ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0,0,PW,PH);
+  ctx.fillRect(0, 0, PW, PH);
 
-  // ---- HEADER BAND ----
-  ctx.fillStyle = '#111111';
-  ctx.fillRect(0,0,PW,90);
-
-  // ロゴ（ヘッダー内 白抜き）
+  // ロゴ読み込み後に描画
   var logoImg = new Image();
   logoImg.onload = function() {
-    // ロゴ描画（白抜き: filter適用はcanvasでは難しいので反転済みURIを使う）
-    ctx.save();
-    ctx.globalCompositeOperation = 'screen';
-    ctx.drawImage(logoImg, 30, 22, logoImg.width * (46/logoImg.height), 46);
-    ctx.restore();
+    _drawPDF(ctx, canvas, logoImg, PW, PH, ML, MR, MT, CW);
+  };
+  logoImg.onerror = function() {
+    _drawPDF(ctx, canvas, null, PW, PH, ML, MR, MT, CW);
+  };
+  logoImg.src = LOGO_PDF_URI;
+}
 
-    // 報告書タイトル右寄せ
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.font = 'bold 22px sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('5S活動報告書', PW-30, 55);
+function _drawPDF(ctx, canvas, logoImg, PW, PH, ML, MR, MT, CW) {
+  var y = MT;
 
-    // 部署サブテキスト
-    ctx.font = '15px sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.45)';
-    ctx.fillText('製造部　' + fv('department'), PW-30, 76);
+  // ── ヘッダー ──────────────────────────────────
+  // タイトル
+  ctx.fillStyle = '#111111';
+  ctx.font = 'bold 36px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('5S活動報告書', ML, y + 30);
 
+  // ロゴ（右寄せ）
+  if (logoImg) {
+    var lh = 36, lw = lh * (logoImg.width / logoImg.height);
+    ctx.drawImage(logoImg, PW - MR - lw, y + 4, lw, lh);
+  }
+
+  // 区切り線
+  y += 50;
+  ctx.strokeStyle = '#cccccc';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(ML, y); ctx.lineTo(PW - MR, y); ctx.stroke();
+  y += 24;
+
+  // ── 概要セクション ────────────────────────────
+  _secLabel(ctx, '概要', ML, y, CW);
+  y += 26;
+
+  var half = CW / 2;
+  var brd = '#dddddd';
+  var r = 8; // 角丸半径
+
+  // 概要ボックス全体を角丸矩形で囲む（枠のみ、内部はセル境界線で区切る）
+  var boxY = y;
+
+  // 行高
+  var rh1 = 72;  // 会社
+  var rh2 = 68;  // 部署/場所
+  var rh3 = 68;  // 担当者
+  var rh4 = 72;  // 実施日/時間
+  var boxH = rh1 + rh2 + rh3 + rh4;
+
+  // 外枠
+  _roundRect(ctx, ML, boxY, CW, boxH, r, '#ffffff', brd, 1);
+
+  // 内部区切り線（横）
+  var divY1 = boxY + rh1;
+  var divY2 = divY1 + rh2;
+  var divY3 = divY2 + rh3;
+  ctx.strokeStyle = brd; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(ML+1, divY1); ctx.lineTo(ML+CW-1, divY1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ML+1, divY2); ctx.lineTo(ML+CW-1, divY2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ML+1, divY3); ctx.lineTo(ML+CW-1, divY3); ctx.stroke();
+  // 縦区切り
+  ctx.beginPath(); ctx.moveTo(ML+half, divY1); ctx.lineTo(ML+half, divY2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ML+half, divY3); ctx.lineTo(ML+half, divY3+rh4); ctx.stroke();
+
+  // 行1: 会社（部署を会社名代わりに）
+  _infoCell(ctx, '会社', fv('department') || '―', ML+16, boxY+10, CW-32);
+  // 行2: 部署 | 場所
+  _infoCell(ctx, '部署', '製造部', ML+16, divY1+8, half-24);
+  _infoCell(ctx, '場所', fv('location') || '―', ML+half+12, divY1+8, half-24);
+  // 行3: 担当者
+  _infoCell(ctx, '担当者', fv('name') || '―', ML+16, divY2+8, CW-32);
+  // 行4: 実施日 | 時間（日付と改善箇所）
+  _infoCell(ctx, '実施日', fv('date') || '―', ML+16, divY3+8, half-24);
+  _infoCell(ctx, '提出日時', S.submittedAt || '', ML+half+12, divY3+8, half-24);
+
+  y = boxY + boxH + 30;
+
+  // ── 写真セクション ────────────────────────────
+  _secLabel(ctx, '写真', ML, y, CW);
+  y += 26;
+
+  var photoW = (CW - 16) / 2;
+  var photoH = Math.round(photoW * 0.72);
+  var photoY = y;
+
+  // BEFOREバッジ＋写真枠
+  _badge(ctx, 'BEFORE', ML, photoY, '#E8604C');
+  _badge(ctx, 'AFTER',  ML + photoW + 16, photoY, '#4CAF50');
+  photoY += 30;
+
+  // 写真枠描画（角丸）
+  _roundRect(ctx, ML, photoY, photoW, photoH, 6, '#f5f5f5', brd, 1);
+  _roundRect(ctx, ML+photoW+16, photoY, photoW, photoH, 6, '#f5f5f5', brd, 1);
+
+  var photosLoaded = 0;
+  var totalPhotos = (S.before ? 1 : 0) + (S.after ? 1 : 0);
+
+  function _finishPDF() {
+    // 写真なしプレースホルダー
+    if (!S.before) {
+      ctx.fillStyle = '#bbbbbb'; ctx.font = '22px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('写真を添付してください', ML + photoW/2, photoY + photoH/2 + 8);
+    }
+    if (!S.after) {
+      ctx.fillStyle = '#bbbbbb'; ctx.font = '22px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('写真を添付してください', ML+photoW+16+photoW/2, photoY + photoH/2 + 8);
+    }
     ctx.textAlign = 'left';
 
-    var y = 118;
-    var ML = 40, MR = 40, CW = PW - ML - MR;
+    y = photoY + photoH + 30;
 
-    // ---- 基本情報 ----
-    drawSectionHead(ctx, '■ 基本情報', ML, y, CW);
-    y += 46;
+    // ── 補足説明セクション ───────────────────────
+    _secLabel(ctx, '補足説明', ML, y, CW);
+    y += 26;
 
-    // 2列
-    var col1x = ML + 10, col2x = ML + CW/2 + 10;
-    var colW = CW/2 - 20;
-
-    drawLabelValue(ctx, '日付', fv('date'), col1x, y, colW);
-    drawLabelValue(ctx, '氏名', fv('name'), col2x, y, colW);
-    y += 44;
-    drawLabelValue(ctx, '部署', fv('department'), col1x, y, CW - 10);
-    y += 44;
-
-    // 区切り線
-    ctx.strokeStyle = '#ddd';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(ML, y); ctx.lineTo(PW-MR, y); ctx.stroke();
-    y += 20;
-
-    // ---- 改善箇所 ----
-    drawSectionHead(ctx, '■ 改善箇所', ML, y, CW);
-    y += 46;
-    ctx.fillStyle = '#111';
+    var contentText = fv('content') || '';
     ctx.font = '24px sans-serif';
-    var locLines = wrapText(ctx, fv('location') || '（未入力）', CW - 20, 24);
-    locLines.forEach(function(line) {
-      ctx.fillText(line, ML+10, y); y += 32;
-    });
-    y += 16;
-
-    // 区切り線
-    ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(ML,y); ctx.lineTo(PW-MR,y); ctx.stroke();
-    y += 20;
-
-    // ---- 改善内容・補足説明 ----
-    drawSectionHead(ctx, '■ 改善内容・効果などの補足説明', ML, y, CW);
-    y += 46;
-    ctx.fillStyle = '#111';
-    ctx.font = '22px sans-serif';
-    var contentText = fv('content') || '（未入力）';
     var contentLines = [];
     contentText.split('\n').forEach(function(para) {
-      var wrapped = wrapText(ctx, para, CW - 20, 22);
-      contentLines = contentLines.concat(wrapped.length ? wrapped : ['']);
+      var wrapped = _wrapText(ctx, para || ' ', CW - 40, 24);
+      contentLines = contentLines.concat(wrapped);
     });
-    contentLines.forEach(function(line) {
-      ctx.fillText(line, ML+10, y); y += 30;
+    var contentBoxH = Math.max(contentLines.length * 34 + 36, 100);
+    _roundRect(ctx, ML, y, CW, contentBoxH, 6, '#ffffff', brd, 1);
+    ctx.fillStyle = '#111111';
+    ctx.font = '24px sans-serif';
+    contentLines.forEach(function(line, i) {
+      ctx.fillText(line, ML + 20, y + 30 + i * 34);
     });
-    y += 20;
+    y += contentBoxH + 30;
 
-    // ---- 写真 ----
-    ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(ML,y); ctx.lineTo(PW-MR,y); ctx.stroke();
-    y += 20;
+    // ── フッター ─────────────────────────────────
+    var now = new Date();
+    var dtStr = now.getFullYear()+'/'+pad(now.getMonth()+1)+'/'+pad(now.getDate())+
+                ' '+pad(now.getHours())+':'+pad(now.getMinutes());
+    ctx.fillStyle = '#aaaaaa';
+    ctx.font = '18px sans-serif';
+    ctx.fillText('出力日時  ' + dtStr, ML, PH - 30);
 
-    drawSectionHead(ctx, '■ 写真　Photos', ML, y, CW);
-    y += 46;
+    // ── jsPDFでA4 PDF化 ──────────────────────────
+    var imgData = canvas.toDataURL('image/jpeg', 0.93);
+    var datePart = fv('date').replace(/-/g,'');
+    var namePart = fv('name').replace(/\s/g,'');
+    var fname = '5S活動報告書_' + namePart + '_' + datePart + '.pdf';
 
-    var photoW = (CW - 20) / 2;
-    var photoH = Math.round(photoW * 0.72);
-
-    // Beforeラベル
-    ctx.fillStyle = '#666';
-    ctx.font = 'bold 18px sans-serif';
-    ctx.fillText('改善前（Before）', ML, y);
-    ctx.fillText('改善後（After）', ML + photoW + 20, y);
-    y += 10;
-
-    // 写真枠
-    ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1.5;
-    ctx.strokeRect(ML, y, photoW, photoH);
-    ctx.strokeRect(ML + photoW + 20, y, photoW, photoH);
-
-    var photoY = y;
-    var photosLoaded = 0;
-    var totalPhotos = (S.before ? 1 : 0) + (S.after ? 1 : 0);
-
-    function afterPhotos() {
-      // 写真なしプレースホルダー
-      ctx.fillStyle = '#f4f4f4';
-      if (!S.before) {
-        ctx.fillRect(ML+1, photoY+1, photoW-2, photoH-2);
-        ctx.fillStyle='#bbb'; ctx.font='20px sans-serif'; ctx.textAlign='center';
-        ctx.fillText('写真を添付してください', ML+photoW/2, photoY+photoH/2);
-        ctx.textAlign='left';
+    try {
+      var jspdf = window.jspdf;
+      if (jspdf && jspdf.jsPDF) {
+        var doc = new jspdf.jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+        doc.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+        doc.save(fname);
+        toast('PDFを出力しました', 'ok');
+      } else {
+        var a = document.createElement('a');
+        a.href = imgData; a.download = fname.replace('.pdf','.jpg'); a.click();
+        toast('画像として出力しました', 'ok');
       }
-      if (!S.after) {
-        ctx.fillStyle='#f4f4f4';
-        ctx.fillRect(ML+photoW+21, photoY+1, photoW-2, photoH-2);
-        ctx.fillStyle='#bbb'; ctx.font='20px sans-serif'; ctx.textAlign='center';
-        ctx.fillText('写真を添付してください', ML+photoW+20+photoW/2, photoY+photoH/2);
-        ctx.textAlign='left';
-      }
-
-      var finalY = photoY + photoH + 30;
-
-      // ---- フッター ----
-      ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(ML,finalY); ctx.lineTo(PW-MR,finalY); ctx.stroke();
-      finalY += 18;
-
-      var now = new Date();
-      var dateStr = now.getFullYear()+'年'+pad(now.getMonth()+1)+'月'+pad(now.getDate())+'日 '+pad(now.getHours())+':'+pad(now.getMinutes());
-      ctx.fillStyle = '#888';
-      ctx.font = '16px sans-serif';
-      ctx.fillText('提出日時：' + dateStr + '　サイボク　製造部', ML, finalY+14);
-
-      // Canvas → PDF (A4 JPEG埋め込み)
-      var dataURL = canvas.toDataURL('image/jpeg', 0.92);
-      var link = document.createElement('a');
-      var datePart = fv('date').replace(/-/g,'');
-      var namePart = fv('name').replace(/\s/g,'');
-      link.download = '5S報告書_' + namePart + '_' + datePart + '.pdf';
-
-      // jsPDFでA4に画像を貼る
-      try {
-        var jspdf = window.jspdf || (typeof jsPDF !== 'undefined' ? {jsPDF} : null);
-        if (jspdf && jspdf.jsPDF) {
-          var doc = new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-          doc.addImage(dataURL,'JPEG',0,0,210,297);
-          doc.save('5S報告書_' + namePart + '_' + datePart + '.pdf');
-          toast('PDFを出力しました','ok');
-        } else {
-          // fallback: PNG保存
-          link.href = dataURL.replace('image/jpeg','image/png');
-          link.download = link.download.replace('.pdf','.png');
-          link.click();
-          toast('画像として出力しました（PDF変換ライブラリ読み込み中）','ok');
-        }
-      } catch(ex) {
-        link.href = dataURL;
-        link.click();
-        toast('画像として出力しました','ok');
-      }
-
-      canvas.style.display='none';
+    } catch(e) {
+      toast('PDF出力に失敗しました', 'err');
     }
+    canvas.style.display = 'none';
+  }
 
-    if (totalPhotos === 0) {
-      afterPhotos();
-      return;
-    }
+  if (totalPhotos === 0) { _finishPDF(); return; }
 
-    function loadPhoto(dataUrl, x, y, w, h, callback) {
-      var img = new Image();
-      img.onload = function() {
-        // アスペクト比を保ちながらフィット
-        var ir = img.width/img.height, fr = w/h;
-        var dw,dh,dx,dy;
-        if (ir > fr) { dw=w; dh=w/ir; dx=x; dy=y+(h-dh)/2; }
-        else { dh=h; dw=h*ir; dx=x+(w-dw)/2; dy=y; }
-        ctx.drawImage(img,dx,dy,dw,dh);
-        callback();
-      };
-      img.src = dataUrl;
-    }
-
-    if (S.before) {
-      loadPhoto(S.before, ML, photoY, photoW, photoH, function() {
-        photosLoaded++;
-        if (photosLoaded === totalPhotos) afterPhotos();
-      });
-    }
-    if (S.after) {
-      loadPhoto(S.after, ML+photoW+20, photoY, photoW, photoH, function() {
-        photosLoaded++;
-        if (photosLoaded === totalPhotos) afterPhotos();
-      });
-    }
-  };
-
-  var logoForPdf = new Image();
-  logoForPdf.src = LOGO_PDF_URI;
-  logoImg.src = logoForPdf.src;
-
-  canvas.style.display='block';
+  function _fitPhoto(src, x, y, w, h, cb) {
+    var img = new Image();
+    img.onload = function() {
+      var ir = img.width/img.height, fr = w/h;
+      var dw,dh,dx,dy;
+      if (ir > fr) { dw=w; dh=w/ir; dx=x; dy=y+(h-dh)/2; }
+      else { dh=h; dw=h*ir; dx=x+(w-dw)/2; dy=y; }
+      // クリッピングで角丸内に収める
+      ctx.save();
+      _clipRoundRect(ctx, x, y, w, h, 6);
+      ctx.drawImage(img, dx, dy, dw, dh);
+      ctx.restore();
+      cb();
+    };
+    img.src = src;
+  }
+  if (S.before) {
+    _fitPhoto(S.before, ML, photoY, photoW, photoH, function() {
+      photosLoaded++;
+      if (photosLoaded === totalPhotos) _finishPDF();
+    });
+  }
+  if (S.after) {
+    _fitPhoto(S.after, ML+photoW+16, photoY, photoW, photoH, function() {
+      photosLoaded++;
+      if (photosLoaded === totalPhotos) _finishPDF();
+    });
+  }
 }
 
-// ---- Canvas helper ----
-function drawSectionHead(ctx, label, x, y, w) {
-  ctx.fillStyle = '#222222';
-  ctx.fillRect(x, y-6, w, 34);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 20px sans-serif';
-  ctx.fillText(label, x+10, y+16);
+// ── Canvas ヘルパー ───────────────────────────────
+function _secLabel(ctx, text, x, y, w) {
+  ctx.fillStyle = '#888888';
+  ctx.font = '20px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(text, x, y + 16);
+  ctx.strokeStyle = '#dddddd'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x, y+22); ctx.lineTo(x+w, y+22); ctx.stroke();
 }
 
-function drawLabelValue(ctx, label, value, x, y, maxW) {
-  ctx.fillStyle = '#888';
-  ctx.font = 'bold 16px sans-serif';
-  ctx.fillText(label, x, y);
-  ctx.fillStyle = '#111';
+function _infoCell(ctx, label, value, x, y, maxW) {
+  ctx.fillStyle = '#888888';
+  ctx.font = '17px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(label, x, y + 14);
+  ctx.fillStyle = '#111111';
   ctx.font = '22px sans-serif';
-  ctx.fillText(value || '―', x, y+26);
+  var lines = _wrapText(ctx, value, maxW, 22);
+  lines.forEach(function(line, i) { ctx.fillText(line, x, y + 38 + i*28); });
 }
 
-function wrapText(ctx, text, maxWidth, fontSize) {
-  var lines = [];
-  var words = text.split('');
-  var line = '';
-  for (var i=0; i<words.length; i++) {
-    var test = line + words[i];
-    if (ctx.measureText(test).width > maxWidth && line.length > 0) {
-      lines.push(line); line = words[i];
-    } else {
-      line = test;
-    }
+function _badge(ctx, text, x, y, color) {
+  var bw = text === 'BEFORE' ? 90 : 75, bh = 24, br = 4;
+  _roundRect(ctx, x, y, bw, bh, br, color, color, 0);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(text, x + 10, y + 17);
+}
+
+function _roundRect(ctx, x, y, w, h, r, fill, stroke, lw) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.arcTo(x+w,y, x+w,y+r, r);
+  ctx.lineTo(x+w, y+h-r); ctx.arcTo(x+w,y+h, x+w-r,y+h, r);
+  ctx.lineTo(x+r, y+h); ctx.arcTo(x,y+h, x,y+h-r, r);
+  ctx.lineTo(x, y+r); ctx.arcTo(x,y, x+r,y, r);
+  ctx.closePath();
+  if (fill)  { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke && lw > 0) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+}
+
+function _clipRoundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+  ctx.closePath(); ctx.clip();
+}
+
+function _wrapText(ctx, text, maxW, fs) {
+  var chars = text.split(''), line = '', lines = [];
+  for (var i=0; i<chars.length; i++) {
+    var test = line + chars[i];
+    if (ctx.measureText(test).width > maxW && line.length > 0) {
+      lines.push(line); line = chars[i];
+    } else { line = test; }
   }
   if (line) lines.push(line);
   return lines.length ? lines : [''];
