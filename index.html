@@ -123,6 +123,7 @@ select {
 textarea { resize: vertical; min-height: 100px; line-height: 1.65; }
 .char-count { text-align: right; font-size: 11px; color: var(--light); margin-top: 3px; }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.two-col-bottom { align-items: end; }
 @media (max-width: 420px) { .two-col { grid-template-columns: 1fr; } }
 
 /* ===== PHOTO UPLOAD ===== */
@@ -322,13 +323,13 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.65; }
         <textarea id="content" rows="6" placeholder="改善した内容や方法、期待される効果などを記入してください"></textarea>
         <div class="char-count"><span id="ccount">0</span> 文字</div>
       </div>
-      <div class="two-col">
+      <div class="two-col two-col-bottom">
         <div class="field">
-          <label>改善にかかったコスト<span class="opt">任意・円</span></label>
+          <label>改善コスト<span class="opt">任意・円</span></label>
           <input type="number" id="costIn" placeholder="0" min="0" step="1">
         </div>
         <div class="field">
-          <label>改善によるコスト削減<span class="opt">任意・円/月</span></label>
+          <label>コスト削減<span class="opt">任意・円/月</span></label>
           <input type="number" id="costOut" placeholder="0" min="0" step="1">
         </div>
       </div>
