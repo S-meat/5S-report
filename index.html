@@ -329,15 +329,9 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.65; }
         <label>実施日<span class="req">*</span></label>
         <input type="date" id="date">
       </div>
-      <div class="two-col">
-        <div class="field">
-          <label>開始時間<span class="req">*</span></label>
-          <input type="time" id="timeStart">
-        </div>
-        <div class="field">
-          <label>終了時間<span class="req">*</span></label>
-          <input type="time" id="timeEnd">
-        </div>
+      <div class="field">
+        <label>所要時間<span class="opt">任意・例：30分、1時間30分</span></label>
+        <input type="text" id="duration" placeholder="例：30分、1時間30分">
       </div>
       <div class="field">
         <label>改善箇所<span class="req">*</span></label>
@@ -498,7 +492,7 @@ function step1() {
   done('chk1'); S.step=2; unlock('sec2'); updateProg(); scrollTo('sec2');
 }
 function step2() {
-  if (!chk(['date','timeStart','timeEnd','location','content'])) { toast('未入力の項目があります','err'); return; }
+  if (!chk(['date','location','content'])) { toast('未入力の項目があります','err'); return; }
   done('chk2'); S.step=3; unlock('sec3'); updateProg(); scrollTo('sec3');
 }
 function step3() {
@@ -599,7 +593,7 @@ function buildConfirm() {
     ['部署', fv('department')],
     ['氏名', fv('name')],
     ['実施日', fv('date')],
-    ['時間', fv('timeStart') + ' ― ' + fv('timeEnd')],
+    ['所要時間', fv('duration') || '―'],
     ['改善箇所', fv('location')],
     ['補足説明', fv('content')],
     ['改善コスト', fv('costIn') ? fv('costIn') + ' 円' : '―'],
@@ -636,8 +630,7 @@ function doSubmit() {
     date: fv('date'),
     name: fv('name'),
     department: fv('department'),
-    timeStart: fv('timeStart'),
-    timeEnd: fv('timeEnd'),
+    duration: fv('duration'),
     location: fv('location'),
     content: fv('content'),
     costIn: fv('costIn'),
@@ -708,8 +701,7 @@ function doReset() {
   window.scrollTo({top:0,behavior:'smooth'});
   var t=new Date();
   document.getElementById('date').value=t.getFullYear()+'-'+pad(t.getMonth()+1)+'-'+pad(t.getDate());
-  document.getElementById('timeStart').value='';
-  document.getElementById('timeEnd').value='';
+  document.getElementById('duration').value='';
   document.getElementById('costIn').value='';
   document.getElementById('costOut').value='';
 }
@@ -821,8 +813,8 @@ function _drawPDF(ctx, canvas, logoImg, PW, PH, ML, MR, MT, CW) {
   // 行3: 実施日
   _infoCell(ctx, '実施日', fv('date') || '―', ML+16, divY2+8, CW-32);
   // 行4: 時間
-  var timeStr = (fv('timeStart') && fv('timeEnd')) ? fv('timeStart') + ' ― ' + fv('timeEnd') : '―';
-  _infoCell(ctx, '時間', timeStr, ML+16, divY3+8, half-24);
+  var timeStr = fv('duration') || '―';
+  _infoCell(ctx, '所要時間', timeStr, ML+16, divY3+8, half-24);
   var costStr = (fv('costIn') ? fv('costIn')+'円' : '―') + ' / 削減 ' + (fv('costOut') ? fv('costOut')+'円/月' : '―');
   _infoCell(ctx, 'コスト', costStr, ML+half+12, divY3+8, half-24);
 
